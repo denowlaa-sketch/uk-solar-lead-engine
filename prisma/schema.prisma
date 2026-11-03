@@ -1,0 +1,252 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  PROPOSAL
+  NEGOTIATION
+  WON
+  LOST
+}
+
+enum LeadSource {
+  WEBSITE
+  REFERRAL
+  COLD_OUTREACH
+  TRADE_SHOW
+  PARTNER
+  AI_DISCOVERY
+  FACEBOOK
+}
+
+enum LeadCategory {
+  A
+  B
+  C
+  D
+}
+
+enum QualificationLabel {
+  EXCELLENT
+  GOOD_PROSPECT
+  MODERATE
+  POOR
+  UNQUALIFIED
+  NOT_ANALYSED
+}
+
+enum SolarSuitability {
+  HIGH
+  MEDIUM
+  LOW
+  UNKNOWN
+}
+
+enum DataConfidence {
+  VERIFIED
+  ESTIMATED
+  UNKNOWN
+}
+
+model Company {
+  id                 String          @id @default(cuid())
+  name               String
+  companyNumber      String?         @unique
+  address            String?
+  postcode           String
+  city               String
+  county             String?
+  industry           String
+  employeeCount      Int?
+  annualRevenue      Float?
+  roofSizeSqm        Float?
+  energyBillMonthly  Float?
+  annualKwhUsage     Float?
+  annualKwhSource    DataConfidence  @default(UNKNOWN)
+  irradianceKwhPerKwp Float?
+  irradianceSource    DataConfidence  @default(UNKNOWN)
+  irradianceRegion    String?
+  lastEnrichedAt      DateTime?
+  website            String?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  contacts Contact[]
+  leads    Lead[]
+
+  @@index([postcode])
+  @@index([city])
+}
+
+model Contact {
+  id        String   @id @default(cuid())
+  companyId String
+  firstName String
+  lastName  String
+  email     String?
+  phone     String?
+  jobTitle  String?
+  isPrimary Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  leads   Lead[]
+
+  @@index([companyId])
+  @@index([email])
+}
+
+model Lead {
+  id                 String             @id @default(cuid())
+  companyId          String
+  contactId          String?
+  status             LeadStatus         @default(NEW)
+  score              Int                @default(0)
+  category           LeadCategory?
+  qualificationLabel QualificationLabel @default(NOT_ANALYSED)
+  source             LeadSource         @default(WEBSITE)
+  notes              String?
+  assignedTo         String?
+  estimatedKw        Float?
+  estimatedKwSource  DataConfidence     @default(UNKNOWN)
+  solarSuitability   SolarSuitability   @default(UNKNOWN)
+  lastAnalysedAt     DateTime?
+  homeowner          Boolean?
+  billBand           String?
+  roofType           String?
+  timeline           String?
+  consentToCall      Boolean            @default(false)
+  consentAt          DateTime?
+  facebookLeadId     String?            @unique
+  facebookFormId     String?
+  facebookPageId     String?
+  formPayload        String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  company  Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  contact  Contact?       @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  analyses         LeadAnalysis[]
+  callAttempts     CallAttempt[]
+  notifications    OwnerNotification[]
+
+  @@index([status])
+  @@index([score])
+  @@index([category])
+  @@index([qualificationLabel])
+  @@index([companyId])
+}
+
+model LeadAnalysis {
+  id                 String             @id @default(cuid())
+  leadId             String
+  score              Int
+  category           LeadCategory
+  qualificationLabel QualificationLabel
+  solarSuitability   SolarSuitability
+  reasons            String
+  unknowns           String
+  pipelineVersion    String             @default("1.0")
+  ranAt              DateTime           @default(now())
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@index([ranAt])
+}
+
+enum CallMode {
+  SANDBOX
+  LIVE
+}
+
+enum CallAttemptStatus {
+  IN_PROGRESS
+  COMPLETED
+  BLOCKED
+}
+
+enum CallOutcome {
+  QUALIFIED
+  UNQUALIFIED
+  NO_ANSWER
+  CALLBACK
+}
+
+model CallAttempt {
+  id             String            @id @default(cuid())
+  leadId         String
+  mode           CallMode          @default(SANDBOX)
+  status         CallAttemptStatus @default(IN_PROGRESS)
+  outcome        CallOutcome?
+  answers        String?
+  summary        String?
+  twilioCallSid  String?
+  providerStatus String?
+  startedAt      DateTime          @default(now())
+  endedAt        DateTime?
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@index([startedAt])
+  @@index([twilioCallSid])
+}
+
+model OwnerNotification {
+  id        String    @id @default(cuid())
+  leadId    String
+  channel   String    @default("email")
+  status    String    @default("sandbox")
+  toAddress String?
+  subject   String
+  body      String
+  createdAt DateTime  @default(now())
+  sentAt    DateTime?
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+}
+
+model DiscoveryProspect {
+  id                 String    @id @default(cuid())
+  name               String
+  companyNumber      String?   @unique
+  address            String?
+  postcode           String
+  city               String
+  county             String?
+  industry           String
+  sicCodes           String?
+  employeeCount      Int?
+  annualRevenue      Float?
+  roofSizeSqm        Float?
+  energyBillMonthly  Float?
+  website            String?
+  contactFirstName   String?
+  contactLastName    String?
+  contactEmail       String?
+  contactPhone       String?
+  contactJobTitle    String?
+  notes              String?
+  sourceName         String?   @default("Companies House")
+  sourceUrl          String?
+  externalId         String?
+  fetchedAt          DateTime?
+  importedAt         DateTime?
+  importedLeadId     String?
+
+  @@index([importedAt])
+  @@index([postcode])
+  @@index([externalId])
+}
