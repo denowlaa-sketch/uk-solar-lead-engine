@@ -60,13 +60,17 @@ export async function fetchFacebookLead(leadgenId: string): Promise<FacebookForm
   url.searchParams.set("fields", "id,created_time,field_data,form_id,page_id");
 
   const response = await fetch(url, { cache: "no-store" });
-  if (!response.ok) {
-    throw new Error(`Facebook Graph API failed (${response.status}).`);
+  const payload = (await response.json()) as GraphLead & {
+    form_id?: string;
+    page_id?: string;
+    error?: { message?: string };
+  };
+  if (!response.ok || payload.error) {
+    throw new Error(payload.error?.message ?? `Facebook Graph API failed (${response.status}).`);
   }
-  const data = (await response.json()) as GraphLead & { form_id?: string; page_id?: string };
-  return mapFieldData(data.field_data ?? [], {
-    leadgenId: data.id ?? leadgenId,
-    formId: data.form_id,
-    pageId: data.page_id,
+  return mapFieldData(payload.field_data ?? [], {
+    leadgenId: payload.id ?? leadgenId,
+    formId: payload.form_id,
+    pageId: payload.page_id,
   });
 }

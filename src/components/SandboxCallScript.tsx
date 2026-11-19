@@ -64,7 +64,7 @@ export function SandboxCallScript({ leadId, defaults }: Props) {
     >
       <h2 className="text-sm font-semibold text-slate-900">Sandbox call script</h2>
       <p className="mt-1 mb-4 text-sm text-slate-500">
-        Pretend the bot asked these. Nothing is dialled. Prefills come from the Instant Form.
+        Pretend the bot asked these. The only fail is if they do not own the home. Other answers are for the advisor.
       </p>
       <ol className="space-y-3 text-sm">
         <li>

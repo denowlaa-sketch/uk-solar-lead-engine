@@ -4,6 +4,8 @@ type TwilioSetupCardProps = {
   accountSidSet: boolean;
   fromNumber: string | null;
   publicBaseUrl: string | null;
+  whatsappFrom?: string | null;
+  callChannel?: string;
 };
 
 export function TwilioSetupCard({
@@ -12,6 +14,8 @@ export function TwilioSetupCard({
   accountSidSet,
   fromNumber,
   publicBaseUrl,
+  whatsappFrom,
+  callChannel,
 }: TwilioSetupCardProps) {
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -24,6 +28,11 @@ export function TwilioSetupCard({
         <li>{fromNumber ? `From ${fromNumber}` : "Missing TWILIO_PHONE_NUMBER"}</li>
         <li>{publicBaseUrl ? "Public URL set" : "Missing TWILIO_PUBLIC_BASE_URL (ngrok https)"}</li>
         <li>{liveEnabled ? "TWILIO_LIVE_DIALS=true" : "Set TWILIO_LIVE_DIALS=true to ring a real phone"}</li>
+        <li>
+          {whatsappFrom
+            ? `WhatsApp ${whatsappFrom} · ${callChannel ?? "auto"}`
+            : "WhatsApp sender not set — phone calls only"}
+        </li>
       </ul>
     </div>
   );

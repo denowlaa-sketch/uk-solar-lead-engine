@@ -10,10 +10,11 @@ An AI-powered UK solar lead generation and sales automation platform.
 - Instant Form webhook `GET/POST /api/facebook/leadgen`
 - Local test form at `/facebook` (no Meta account required)
 - Stores name, phone, email, postcode, homeowner, bill band, roof, timeline, **call consent**
-- Residential qualifier (`residential-1.0`) — does not dial or email
-- Sandbox call queue (`/facebook`) for consented leads only; script can mark QUALIFIED
+- Residential qualifier (`residential-1.0`)
+- Sandbox call queue (`/facebook`) for consented leads; script can mark QUALIFIED
+- Auto Twilio call after ingest when `TWILIO_LIVE_DIALS=true` and consent is stored
 - Owner email via Resend when `OWNER_NOTIFY_EMAIL` and `RESEND_API_KEY` are set (customer is never emailed)
-- Live Twilio keypad bot when `TWILIO_LIVE_DIALS=true` and Twilio keys + a public HTTPS URL are set (consent required)
+- Live Twilio keypad bot (consent required)
 
 ### Lead Management
 - **Companies** — website, location, industry, roof size, energy bills, annual kWh (with verified/estimated/unknown source)
@@ -89,6 +90,7 @@ Get a free API key: [Companies House Developer Hub](https://developer.company-in
 npm install
 npm run db:setup    # Create DB + seed 12 leads + 8 discovery prospects + run analysis
 npm run dev         # http://localhost:3000
+npm run always-on:mac   # LaunchAgent: stays up after Cursor closes (see docs/always-on.md)
 ```
 
 ### Database Commands
@@ -159,12 +161,14 @@ Fields without values display as **Unknown** in the UI. The scorer and seed:
 | GET | `/api/facebook/leadgen` | Meta webhook verification |
 | POST | `/api/facebook/leadgen` | Meta leadgen webhook |
 | POST | `/api/facebook/leads/simulate` | Local Instant Form test ingest |
+| POST | `/api/facebook/leads/sync` | Pull Instant Form leads from Meta into the CRM |
 | POST | `/api/calls/:id/start` | Open sandbox call (consent required) |
 | POST | `/api/calls/:id/complete` | Finish sandbox script; may QUALIFY and email owner |
 | POST | `/api/calls/:id/dial` | Place a live Twilio call (consent + TWILIO_LIVE_DIALS) |
 | GET | `/api/calls/:id` | Latest call attempt status |
 | POST | `/api/twilio/voice/:attemptId/:step` | TwiML keypad bot + call status |
 | GET | `/api/twilio/status` | Whether Twilio live dials are configured |
+| GET | `/api/health` | Always-on heartbeat + last Facebook pull |
 | GET | `/api/email/status` | Whether owner email is configured |
 | POST | `/api/email/test` | Send a test email to OWNER_NOTIFY_EMAIL |
 | POST | `/api/leads/:id/notify-owner` | Email owner about a QUALIFIED lead |
@@ -180,7 +184,8 @@ Fields without values display as **Unknown** in the UI. The scorer and seed:
 | 4a | Facebook Instant Form → CRM |
 | 4b | Sandbox call bot + QUALIFIED |
 | 4c | Owner email on QUALIFIED |
-| **4d** | Live Twilio dials (consent only) *(current)* |
+| **4d** | Live Twilio dials (consent only) |
+| **4e** | Always-on process (LaunchAgent / systemd) *(current)* |
 
 ## License
 

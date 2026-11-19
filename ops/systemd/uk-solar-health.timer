@@ -1,0 +1,10 @@
+[Unit]
+Description=Send full adapter health email every morning at 06:00 UK time
+
+[Timer]
+OnCalendar=*-*-* 06:00:00 Europe/London
+Persistent=true
+Unit=uk-solar-health.service
+
+[Install]
+WantedBy=timers.target

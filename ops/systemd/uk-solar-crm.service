@@ -1,0 +1,21 @@
+[Unit]
+Description=UK Solar Lead Engine CRM
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=uksolar
+WorkingDirectory=/opt/uk-solar-lead-engine
+Environment=NODE_ENV=production
+Environment=PORT=3000
+Environment=BIND_HOST=0.0.0.0
+EnvironmentFile=-/opt/uk-solar-lead-engine/.env
+ExecStart=/usr/bin/bash /opt/uk-solar-lead-engine/ops/scripts/run-crm.sh
+ExecStartPost=/bin/bash -c 'for i in 1 2 3 4 5 6 7 8 9 10; do curl -sfS --max-time 3 http://127.0.0.1:3000/api/health && exit 0; sleep 2; done; exit 0'
+Restart=always
+RestartSec=5
+TimeoutStopSec=20
+
+[Install]
+WantedBy=multi-user.target

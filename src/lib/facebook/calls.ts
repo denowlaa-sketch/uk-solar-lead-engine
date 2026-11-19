@@ -18,24 +18,12 @@ export function evaluateCallOutcome(answers: SandboxCallAnswers): {
   outcome: "QUALIFIED" | "UNQUALIFIED";
   summary: string;
 } {
-  if (!answers.stillInterested) {
-    return { outcome: "UNQUALIFIED", summary: "Not interested on the call." };
-  }
-  if (!answers.homeowner) {
-    return { outcome: "UNQUALIFIED", summary: "Not a homeowner — cannot install." };
-  }
-  if (!answers.roofOk) {
-    return { outcome: "UNQUALIFIED", summary: "Roof not suitable." };
-  }
-  if (!answers.followUpOk) {
-    return { outcome: "UNQUALIFIED", summary: "Declined advisor follow-up." };
-  }
-  if (answers.billBand === "under_50") {
-    return { outcome: "UNQUALIFIED", summary: "Bill too low for a typical rooftop payback." };
+  if (answers.homeowner === false) {
+    return { outcome: "UNQUALIFIED", summary: "Not a homeowner — cannot progress." };
   }
   return {
     outcome: "QUALIFIED",
-    summary: "Call passed: homeowner, suitable roof, follow-up accepted.",
+    summary: "Call passed: they own the home.",
   };
 }
 

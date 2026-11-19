@@ -155,6 +155,6 @@ export function qualifyFacebookLead(answers: FacebookFormAnswers): AnalysisResul
     solarSuitability: answers.homeowner === false ? "LOW" : score >= 70 ? "HIGH" : score >= 45 ? "MEDIUM" : "UNKNOWN",
     reasons,
     unknowns,
-    pipelineVersion: "residential-1.0",
+    pipelineVersion: "residential-1.1",
   };
 }

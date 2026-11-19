@@ -1,0 +1,11 @@
+[Unit]
+Description=Morning adapter health email for solar CRM
+After=network-online.target uk-solar-crm.service
+
+[Service]
+Type=oneshot
+User=uksolar
+Environment=TZ=Europe/London
+Environment=UK_SOLAR_ENV=/opt/uk-solar-lead-engine/.env
+WorkingDirectory=/opt/uk-solar-lead-engine/ops/scripts
+ExecStart=/usr/bin/python3 /opt/uk-solar-lead-engine/ops/scripts/morning-health.py

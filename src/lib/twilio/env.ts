@@ -1,17 +1,6 @@
-import { readFileSync } from "fs";
-import { resolve } from "path";
-
 function readEnv(name: string): string | undefined {
   const fromProcess = (process.env[name] ?? "").trim();
-  if (fromProcess) return fromProcess;
-  try {
-    const text = readFileSync(resolve(process.cwd(), ".env"), "utf8");
-    const match = text.match(new RegExp(`^${name}\\s*=\\s*(.*)$`, "m"));
-    if (!match) return undefined;
-    return match[1].trim().replace(/^["']|["']$/g, "") || undefined;
-  } catch {
-    return undefined;
-  }
+  return fromProcess || undefined;
 }
 
 export function getTwilioAccountSid(): string | undefined {
@@ -24,6 +13,22 @@ export function getTwilioAuthToken(): string | undefined {
 
 export function getTwilioFromNumber(): string | undefined {
   return readEnv("TWILIO_PHONE_NUMBER");
+}
+
+export function getTwilioWhatsAppFrom(): string | undefined {
+  const raw = readEnv("TWILIO_WHATSAPP_FROM");
+  if (!raw) return undefined;
+  return raw.startsWith("whatsapp:") ? raw : `whatsapp:${raw}`;
+}
+
+export function getTwilioWhatsAppContentSid(): string | undefined {
+  return readEnv("TWILIO_WHATSAPP_CONTENT_SID");
+}
+
+export function getTwilioCallChannel(): "auto" | "whatsapp" | "phone" {
+  const raw = (readEnv("TWILIO_CALL_CHANNEL") ?? "auto").toLowerCase();
+  if (raw === "whatsapp" || raw === "phone") return raw;
+  return "auto";
 }
 
 export function getTwilioPublicBaseUrl(): string | undefined {
@@ -39,18 +44,22 @@ export function isTwilioConfigured(): boolean {
   return Boolean(
     getTwilioAccountSid() &&
       getTwilioAuthToken() &&
-      getTwilioFromNumber() &&
+      (getTwilioFromNumber() || getTwilioWhatsAppFrom()) &&
       getTwilioPublicBaseUrl()
   );
 }
 
 export function twilioStatus() {
+  const whatsappFrom = getTwilioWhatsAppFrom() ?? null;
   return {
     accountSidSet: Boolean(getTwilioAccountSid()),
     authTokenSet: Boolean(getTwilioAuthToken()),
     fromNumber: getTwilioFromNumber() ?? null,
     publicBaseUrl: getTwilioPublicBaseUrl() ?? null,
     liveEnabled: isTwilioLiveEnabled(),
+    whatsappFrom,
+    whatsappReady: Boolean(whatsappFrom),
+    callChannel: getTwilioCallChannel(),
     ready: isTwilioConfigured() && isTwilioLiveEnabled(),
   };
 }

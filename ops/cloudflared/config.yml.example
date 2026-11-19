@@ -1,0 +1,9 @@
+# Named Cloudflare tunnel — stable HTTPS URL for Meta + Twilio.
+# Copy to ~/.cloudflared/config.yml after `cloudflared tunnel create uk-solar-crm`
+tunnel: REPLACE_TUNNEL_ID
+credentials-file: /home/uksolar/.cloudflared/REPLACE_TUNNEL_ID.json
+
+ingress:
+  - hostname: crm.example.com
+    service: http://127.0.0.1:3000
+  - service: http_status:404

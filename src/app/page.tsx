@@ -1,120 +1,81 @@
-import { Megaphone, Phone, Sparkles, Target, TrendingUp, Zap } from "lucide-react";
+import Link from "next/link";
+import { Megaphone, Phone, Target, Users } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
-import { StatusChart } from "@/components/StatusChart";
-import { CategoryChart } from "@/components/CategoryChart";
-import { ScoreDistributionChart } from "@/components/ScoreDistributionChart";
-import { TopLeads } from "@/components/TopLeads";
-import { LeadsTable } from "@/components/LeadsTable";
-import { LeadFilters } from "@/components/LeadFilters";
-import { RunAnalysisButton } from "@/components/RunAnalysisButton";
-import { getDashboardStats, getLeads } from "@/lib/leads";
-import type { LeadCategory, LeadStatus, QualificationLabel } from "@prisma/client";
+import { getDashboardStats, getRecentLeads } from "@/lib/leads";
+import { getWatchdogStatus, startFacebookWatchdog } from "@/lib/facebook/watchdog";
+import { Badge } from "@/components/Badge";
+import { getQualificationColor, QUALIFICATION_LABELS } from "@/lib/types";
 
-type SearchParams = Promise<{
-  status?: string;
-  category?: string;
-  qualification?: string;
-  search?: string;
-  minScore?: string;
-}>;
+export const dynamic = "force-dynamic";
 
-export default async function DashboardPage({
-  searchParams,
-}: {
-  searchParams: SearchParams;
-}) {
-  const params = await searchParams;
-
-  const filters = {
-    status: params.status as LeadStatus | undefined,
-    category: params.category as LeadCategory | undefined,
-    qualification: params.qualification as QualificationLabel | undefined,
-    search: params.search,
-    minScore: params.minScore ? parseInt(params.minScore, 10) : undefined,
-  };
-
-  const [stats, leads, topLeads] = await Promise.all([
+export default async function DashboardPage() {
+  startFacebookWatchdog();
+  const [stats, recent, meta] = await Promise.all([
     getDashboardStats(),
-    getLeads(filters),
-    getLeads(),
+    getRecentLeads(8),
+    Promise.resolve(getWatchdogStatus()),
   ]);
+
+  const waitingCall = stats.waitingCallCount;
 
   return (
     <>
-      <PageHeader
-        title="Dashboard"
-        description="Facebook ad leads and pipeline. Call bot and owner emails are not enabled yet."
-      >
-        <RunAnalysisButton label="Analyse All Leads" />
-      </PageHeader>
+      <PageHeader title="Home" description="New Instant Form leads, calls, and who is ready for a quote." />
 
-      <div className="mb-6">
-        <LeadFilters
-          basePath="/"
-          initialStatus={params.status ?? ""}
-          initialCategory={params.category ?? ""}
-          initialQualification={params.qualification ?? ""}
-          initialSearch={params.search ?? ""}
-          initialMinScore={params.minScore ?? ""}
-        />
-      </div>
-
-      <div className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <StatCard label="Total Leads" value={stats.totalLeads} icon={Zap} accent="emerald" />
+      <div className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard label="Facebook leads" value={stats.facebookCount} icon={Megaphone} accent="blue" />
         <StatCard
-          label="Facebook leads"
-          value={stats.facebookCount}
-          icon={Megaphone}
-          accent="blue"
-        />
-        <StatCard
-          label="Consented to call"
-          value={stats.consentedCount}
+          label="Waiting for a call"
+          value={waitingCall}
           icon={Phone}
           accent="violet"
-          trend="Not dialled yet"
+          trend={meta.lastError ? "Meta pull needs attention" : meta.running ? "Meta pull on" : "Meta pull off"}
         />
         <StatCard
-          label="Avg. Score"
-          value={stats.avgScore}
-          icon={TrendingUp}
-          accent="amber"
-          trend={`${stats.analysedCount} analysed`}
-        />
-        <StatCard
-          label="A-Tier Leads"
-          value={stats.aTierCount}
-          icon={Sparkles}
-          accent="violet"
-          trend="Score 80+"
-        />
-        <StatCard
-          label="Qualified Pipeline"
+          label="Qualified"
           value={stats.qualifiedCount}
           icon={Target}
           accent="emerald"
-          trend={`${stats.wonCount} won`}
+          trend="Passed the call"
         />
+        <StatCard label="Everyone in the CRM" value={stats.totalLeads} icon={Users} accent="amber" />
       </div>
 
-      <div className="mb-8 grid gap-6 lg:grid-cols-3">
-        <StatusChart data={stats.statusCounts} total={stats.totalLeads} />
-        <CategoryChart data={stats.categoryCounts} total={stats.analysedCount} />
-        <ScoreDistributionChart buckets={stats.scoreBuckets} />
-      </div>
-
-      <div className="mb-8 grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-slate-900">
-              Leads {filters.search || filters.status || filters.category ? "(filtered)" : ""}
-            </h2>
-            <span className="text-sm text-slate-500">{leads.length} results</span>
-          </div>
-          <LeadsTable leads={leads} compact />
+      <div className="overflow-hidden rounded-2xl border border-white/40 bg-[#f7f4ec]/95 shadow-sm">
+        <div className="flex items-center justify-between border-b border-stone-200/80 px-5 py-4">
+          <h2 className="text-lg font-semibold text-slate-900">Latest people</h2>
+          <Link href="/facebook" className="text-sm font-medium text-brand-700 hover:text-brand-800">
+            Open inbox
+          </Link>
         </div>
-        <TopLeads leads={topLeads} />
+        {recent.length === 0 ? (
+          <p className="px-5 py-10 text-center text-sm text-slate-500">No leads yet.</p>
+        ) : (
+          <ul className="divide-y divide-stone-200/70">
+            {recent.map((lead) => {
+              const name = lead.contact
+                ? `${lead.contact.firstName} ${lead.contact.lastName}`
+                : lead.company.name;
+              return (
+                <li key={lead.id}>
+                  <Link href={`/leads/${lead.id}`} className="flex items-center justify-between gap-4 px-5 py-3.5 hover:bg-white/60">
+                    <div>
+                      <p className="font-medium text-slate-900">{name}</p>
+                      <p className="text-xs text-slate-500">
+                        {lead.contact?.phone ?? "No phone"}
+                        {lead.consentToCall ? " · Can call" : " · Do not call"}
+                      </p>
+                    </div>
+                    <Badge className={getQualificationColor(lead.qualificationLabel)}>
+                      {QUALIFICATION_LABELS[lead.qualificationLabel]}
+                    </Badge>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </div>
     </>
   );

@@ -46,6 +46,12 @@ export function parseTimeline(value: string | undefined): string | undefined {
   return undefined;
 }
 
+export function extractUkPostcode(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+  const match = value.toUpperCase().match(/\b([A-Z]{1,2}\d[A-Z\d]?)\s*(\d[A-Z]{2})\b/);
+  return match ? `${match[1]} ${match[2]}` : undefined;
+}
+
 export function splitName(fullName: string | undefined): { firstName: string; lastName: string } {
   const parts = (fullName ?? "Unknown").trim().split(/\s+/);
   if (parts.length === 1) return { firstName: parts[0], lastName: "Lead" };
@@ -79,22 +85,52 @@ export function mapFieldData(
     "consent_to_call",
     "consent",
     "may_we_call_you",
-    "i_agree_to_be_called_about_solar"
+    "i_agree_to_be_called_about_solar",
+    "i_agree_to_an_automated_call_about_solar"
   );
+
+  const roofRaw = pick(
+    "roof_type",
+    "type_of_roof",
+    "is_the_roof_in_decent_condition_and_not_heavily_shaded",
+    "is_the_roof_in_decent_condition_not_heavily_shaded"
+  );
+  const roofYesNo = parseYesNo(roofRaw);
 
   return {
     firstName: names.firstName,
     lastName: names.lastName,
     email: pick("email", "email_address"),
     phone: pick("phone_number", "phone", "mobile", "mobile_number"),
-    postcode: (pick("postcode", "post_code", "zip_code", "zip") ?? "UNKNOWN").toUpperCase(),
+    streetAddress: pick("street_address", "address", "full_address"),
+    postcode: (
+      pick("postcode", "post_code", "zip_code", "zip") ||
+      extractUkPostcode(pick("street_address", "address", "full_address", "city")) ||
+      "UNKNOWN"
+    ).toUpperCase(),
     city: pick("city", "town"),
-    homeowner: parseYesNo(pick("homeowner", "are_you_the_homeowner", "do_you_own_your_home")),
-    billBand: parseBillBand(
-      pick("electricity_bill", "monthly_electricity_bill", "energy_bill", "bill_band")
+    homeowner: parseYesNo(
+      pick("homeowner", "are_you_the_homeowner", "do_you_own_your_home", "do_you_own_the_property")
     ),
-    roofType: pick("roof_type", "type_of_roof"),
-    timeline: parseTimeline(pick("timeline", "when_are_you_looking_to_install", "timeframe")),
+    billBand: parseBillBand(
+      pick(
+        "electricity_bill",
+        "monthly_electricity_bill",
+        "energy_bill",
+        "bill_band",
+        "roughly_how_much_is_your_monthly_electricity_bill"
+      )
+    ),
+    roofType:
+      roofYesNo === true ? "Decent / not heavily shaded" : roofYesNo === false ? "Not suitable" : roofRaw,
+    timeline: parseTimeline(
+      pick(
+        "timeline",
+        "when_are_you_looking_to_install",
+        "when_would_you_like_to_install",
+        "timeframe"
+      )
+    ),
     consentToCall: parseYesNo(consentRaw) === true,
     facebookLeadId: meta?.leadgenId,
     facebookFormId: meta?.formId,

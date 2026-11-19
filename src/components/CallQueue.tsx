@@ -8,13 +8,13 @@ export async function CallQueue() {
 
   return (
     <section className="mb-8">
-      <h2 className="mb-3 text-lg font-semibold text-slate-900">
+      <h2 className="mb-3 text-lg font-semibold text-[#f4f1e8]">
         Call queue
-        <span className="ml-2 text-sm font-normal text-slate-500">
+        <span className="ml-2 text-sm font-normal text-[#c9cebf]">
           {queue.length} consented · sandbox or live Twilio
         </span>
       </h2>
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div className="overflow-hidden rounded-2xl border border-white/40 bg-[#f7f4ec]/95 shadow-sm">
         {queue.length === 0 ? (
           <p className="px-4 py-8 text-center text-sm text-slate-500">
             No consented Facebook leads waiting. Add a test lead with call consent, or complete existing calls.
@@ -22,8 +22,8 @@ export async function CallQueue() {
         ) : (
           <ul className="divide-y divide-slate-100">
             {queue.map((lead) => (
-              <li key={lead.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-                <div>
+              <li key={lead.id} className="flex min-w-0 items-center justify-between gap-3 px-4 py-3">
+                <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium text-slate-900">
                     {lead.contact
                       ? `${lead.contact.firstName} ${lead.contact.lastName}`
@@ -36,7 +36,7 @@ export async function CallQueue() {
                 </div>
                 <Link
                   href={`/facebook/calls/${lead.id}`}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-700"
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-700"
                 >
                   <Phone className="h-3.5 w-3.5" />
                   Sandbox call

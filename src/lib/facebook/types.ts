@@ -5,6 +5,7 @@ export type FacebookFormAnswers = {
   phone?: string;
   postcode: string;
   city?: string;
+  streetAddress?: string;
   homeowner?: boolean;
   billBand?: string;
   roofType?: string;

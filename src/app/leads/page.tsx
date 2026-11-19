@@ -1,16 +1,11 @@
 import { PageHeader } from "@/components/PageHeader";
 import { LeadsTable } from "@/components/LeadsTable";
-import { LeadFilters } from "@/components/LeadFilters";
-import { RunAnalysisButton } from "@/components/RunAnalysisButton";
 import { getLeads } from "@/lib/leads";
-import type { LeadCategory, LeadStatus, QualificationLabel } from "@prisma/client";
+import type { LeadStatus } from "@prisma/client";
 
 type SearchParams = Promise<{
   status?: string;
-  category?: string;
-  qualification?: string;
   search?: string;
-  minScore?: string;
 }>;
 
 export default async function LeadsPage({ searchParams }: { searchParams: SearchParams }) {
@@ -18,32 +13,21 @@ export default async function LeadsPage({ searchParams }: { searchParams: Search
 
   const leads = await getLeads({
     status: params.status as LeadStatus | undefined,
-    category: params.category as LeadCategory | undefined,
-    qualification: params.qualification as QualificationLabel | undefined,
     search: params.search,
-    minScore: params.minScore ? parseInt(params.minScore, 10) : undefined,
   });
 
   return (
     <>
-      <PageHeader
-        title="Leads"
-        description={`${leads.length} lead${leads.length !== 1 ? "s" : ""} in your pipeline`}
-      >
-        <RunAnalysisButton label="Analyse All Leads" />
-      </PageHeader>
-
-      <div className="mb-6">
-        <LeadFilters
-          initialStatus={params.status ?? ""}
-          initialCategory={params.category ?? ""}
-          initialQualification={params.qualification ?? ""}
-          initialSearch={params.search ?? ""}
-          initialMinScore={params.minScore ?? ""}
+      <PageHeader title="All leads" description={`${leads.length} people in the CRM`} />
+      <form className="mb-6" action="/leads">
+        <input
+          name="search"
+          defaultValue={params.search ?? ""}
+          placeholder="Search name or phone"
+          className="w-full max-w-md rounded-xl border border-white/40 bg-[#f7f4ec]/95 px-4 py-2.5 text-sm shadow-sm outline-none ring-brand-600/30 focus:ring-2"
         />
-      </div>
-
-      <LeadsTable leads={leads} />
+      </form>
+      <LeadsTable leads={leads} compact />
     </>
   );
 }

@@ -26,7 +26,11 @@ export function FacebookLeadForm() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Could not save lead");
-      setOk(`Lead saved (${data.qualification?.qualificationLabel ?? "NEW"}). No call or email sent.`);
+      setOk(
+        data.dial?.dialled
+          ? `Lead saved. Twilio is calling ${data.dial.to ?? "the number"} now.`
+          : `Lead saved. ${data.dial?.reason ?? "Waiting in the call queue if they consented."}`
+      );
       e.currentTarget.reset();
       router.refresh();
     } catch (err) {
@@ -41,71 +45,33 @@ export function FacebookLeadForm() {
 
   return (
     <form onSubmit={handleSubmit} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-      <h2 className="text-sm font-semibold text-slate-900">Simulate Facebook Instant Form</h2>
+      <h2 className="text-sm font-semibold text-slate-900">Test Instant Form</h2>
       <p className="mt-1 mb-4 text-sm text-slate-500">
-        Use this until Meta is connected. Same questions your ad form should ask. Nothing is called or emailed.
+        Same short form as the ad: name, email, phone, address, call consent. Qualification happens on the call.
       </p>
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="text-sm">
           <span className="mb-1 block font-medium text-slate-700">First name</span>
-          <input name="firstName" required className={fieldClass} defaultValue="Amira" />
+          <input name="firstName" required className={fieldClass} />
         </label>
         <label className="text-sm">
           <span className="mb-1 block font-medium text-slate-700">Last name</span>
-          <input name="lastName" required className={fieldClass} defaultValue="Khan" />
+          <input name="lastName" required className={fieldClass} />
         </label>
         <label className="text-sm">
           <span className="mb-1 block font-medium text-slate-700">Phone</span>
-          <input name="phone" required className={fieldClass} defaultValue="+44 7700 900123" />
+          <input name="phone" required className={fieldClass} placeholder="+44 7..." />
         </label>
         <label className="text-sm">
           <span className="mb-1 block font-medium text-slate-700">Email</span>
-          <input name="email" type="email" className={fieldClass} defaultValue="amira.khan@example.com" />
-        </label>
-        <label className="text-sm">
-          <span className="mb-1 block font-medium text-slate-700">Postcode</span>
-          <input name="postcode" required className={fieldClass} defaultValue="M14 5TP" />
-        </label>
-        <label className="text-sm">
-          <span className="mb-1 block font-medium text-slate-700">City</span>
-          <input name="city" className={fieldClass} defaultValue="Manchester" />
-        </label>
-        <label className="text-sm">
-          <span className="mb-1 block font-medium text-slate-700">Homeowner?</span>
-          <select name="homeowner" className={fieldClass} defaultValue="yes">
-            <option value="yes">Yes</option>
-            <option value="no">No</option>
-          </select>
-        </label>
-        <label className="text-sm">
-          <span className="mb-1 block font-medium text-slate-700">Monthly electricity bill</span>
-          <select name="billBand" className={fieldClass} defaultValue="100_150">
-            <option value="under_50">Under £50</option>
-            <option value="50_100">£50–£100</option>
-            <option value="100_150">£100–£150</option>
-            <option value="150_plus">£150+</option>
-          </select>
-        </label>
-        <label className="text-sm">
-          <span className="mb-1 block font-medium text-slate-700">Roof type</span>
-          <select name="roofType" className={fieldClass} defaultValue="Pitched tile">
-            <option>Pitched tile</option>
-            <option>Slate</option>
-            <option>Flat</option>
-            <option>Unknown</option>
-          </select>
-        </label>
-        <label className="text-sm">
-          <span className="mb-1 block font-medium text-slate-700">Timeline</span>
-          <select name="timeline" className={fieldClass} defaultValue="3_months">
-            <option value="now">Ready now</option>
-            <option value="3_months">Within 3 months</option>
-            <option value="6_months">Within 6 months</option>
-            <option value="researching">Just researching</option>
-          </select>
+          <input name="email" type="email" className={fieldClass} />
         </label>
         <label className="text-sm sm:col-span-2">
-          <span className="mb-1 block font-medium text-slate-700">Consent to call about solar</span>
+          <span className="mb-1 block font-medium text-slate-700">Address / postcode</span>
+          <input name="address" required className={fieldClass} placeholder="12 High Street, Manchester M14 5TP" />
+        </label>
+        <label className="text-sm sm:col-span-2">
+          <span className="mb-1 block font-medium text-slate-700">Consent to an automated call about solar</span>
           <select name="consentToCall" className={fieldClass} defaultValue="yes">
             <option value="yes">Yes — you may call me</option>
             <option value="no">No</option>

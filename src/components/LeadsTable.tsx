@@ -33,7 +33,7 @@ type LeadsTableProps = {
 
 export function LeadsTable({ leads, compact = false }: LeadsTableProps) {
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+    <div className="overflow-hidden rounded-2xl border border-white/40 bg-[#f7f4ec]/95 shadow-sm">
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm">
           <thead>

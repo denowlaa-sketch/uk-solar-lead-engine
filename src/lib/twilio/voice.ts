@@ -1,7 +1,7 @@
 import { prisma } from "../prisma";
 import { completeSandboxCall, type SandboxCallAnswers } from "../facebook/calls";
 import {
-  applyDigit,
+  applyReply,
   gatherTwiml,
   nextStep,
   parseStoredAnswers,
@@ -18,7 +18,7 @@ function xmlResponse(xml: string) {
   });
 }
 
-export async function handleVoiceStart(attemptId: string, step: VoiceStep) {
+export async function handleVoiceStart(attemptId: string, step: VoiceStep, intro = "") {
   const attempt = await prisma.callAttempt.findUnique({ where: { id: attemptId } });
   if (!attempt || attempt.status !== "IN_PROGRESS") {
     return xmlResponse(sayHangup("This call is no longer active. Goodbye."));
@@ -28,25 +28,49 @@ export async function handleVoiceStart(attemptId: string, step: VoiceStep) {
     return xmlResponse(sayHangup("The call system is not configured. Goodbye."));
   }
   const retry = `<Redirect method="POST">${action}</Redirect>`;
-  return xmlResponse(gatherTwiml(action, promptFor(step), retry));
+  const say = `${intro}${promptFor(step)}`;
+  return xmlResponse(gatherTwiml(action, say, retry));
 }
 
-export async function handleVoiceDigit(attemptId: string, step: VoiceStep, digits: string) {
+export async function handleVoiceDigit(
+  attemptId: string,
+  step: VoiceStep,
+  digits: string,
+  speech = ""
+) {
   const attempt = await prisma.callAttempt.findUnique({ where: { id: attemptId } });
   if (!attempt || attempt.status !== "IN_PROGRESS") {
     return xmlResponse(sayHangup("This call is no longer active. Goodbye."));
   }
 
   const current = parseStoredAnswers(attempt.answers);
-  const applied = applyDigit(current, step, digits);
+  const applied = applyReply(current, step, digits, speech);
   if ("error" in applied) {
-    return handleVoiceStart(attemptId, step);
+    return handleVoiceStart(attemptId, step, "Sorry, I didn't catch that. ");
   }
 
   await prisma.callAttempt.update({
     where: { id: attemptId },
     data: { answers: JSON.stringify(applied) },
   });
+
+  if (step === "interested" && applied.stillInterested === false) {
+    await completeSandboxCall(attempt.leadId, applied, "CALLBACK", {
+      attemptId,
+      live: true,
+    });
+    return xmlResponse(sayHangup("That's fine. Thank you. Goodbye."));
+  }
+
+  if (step === "homeowner" && applied.homeowner === false) {
+    await completeSandboxCall(attempt.leadId, applied, undefined, {
+      attemptId,
+      live: true,
+    });
+    return xmlResponse(
+      sayHangup("Sorry, we can only help if you own the home. We cannot progress with this call. Goodbye.")
+    );
+  }
 
   const following = nextStep(step);
   if (following === "done") {
@@ -57,7 +81,7 @@ export async function handleVoiceDigit(attemptId: string, step: VoiceStep, digit
     const message =
       "outcome" in result && result.outcome === "QUALIFIED"
         ? "Thank you. An advisor will follow up. Goodbye."
-        : "Thank you. We will not continue this enquiry. Goodbye.";
+        : "Sorry, we can only help if you own the home. We cannot progress with this call. Goodbye.";
     return xmlResponse(sayHangup(message));
   }
 

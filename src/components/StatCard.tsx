@@ -18,7 +18,7 @@ const accentStyles = {
 
 export function StatCard({ label, value, icon: Icon, trend, accent = "emerald" }: StatCardProps) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div className="rounded-2xl border border-white/40 bg-[#f7f4ec]/95 p-5 shadow-sm">
       <div className="flex items-start justify-between">
         <div>
           <p className="text-sm font-medium text-slate-500">{label}</p>

@@ -76,6 +76,12 @@ export async function getDashboardStats() {
   const aTierCount = leads.filter((l) => l.category === "A").length;
   const facebookCount = leads.filter((l) => l.source === "FACEBOOK").length;
   const consentedCount = leads.filter((l) => l.source === "FACEBOOK" && l.consentToCall).length;
+  const waitingCallCount = leads.filter(
+    (l) =>
+      l.source === "FACEBOOK" &&
+      l.consentToCall &&
+      (l.status === "NEW" || l.status === "CONTACTED")
+  ).length;
 
   const scoreBuckets = [
     { label: "80–100", min: 80, max: 100, count: 0 },
@@ -99,6 +105,7 @@ export async function getDashboardStats() {
     aTierCount,
     facebookCount,
     consentedCount,
+    waitingCallCount,
     analysedCount: analysedLeads.length,
     statusCounts: statusCounts.map((s) => ({ status: s.status, count: s._count.status })),
     categoryCounts: categoryCounts
@@ -121,6 +128,14 @@ export async function getLeads(filters?: LeadFilters) {
       analyses: { orderBy: { ranAt: "desc" }, take: 1 },
     },
     orderBy: [{ score: "desc" }, { updatedAt: "desc" }],
+  });
+}
+
+export async function getRecentLeads(limit = 8) {
+  return prisma.lead.findMany({
+    include: { company: true, contact: true },
+    orderBy: { createdAt: "desc" },
+    take: limit,
   });
 }
 

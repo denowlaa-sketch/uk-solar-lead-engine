@@ -27,8 +27,9 @@ export async function POST(
   }
 
   const digits = paramsBody.Digits ?? "";
-  if (!digits) {
+  const speech = paramsBody.SpeechResult ?? "";
+  if (!digits && !speech) {
     return handleVoiceStart(attemptId, step);
   }
-  return handleVoiceDigit(attemptId, step, digits);
+  return handleVoiceDigit(attemptId, step, digits, speech);
 }

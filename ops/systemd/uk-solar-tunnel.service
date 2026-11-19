@@ -1,0 +1,14 @@
+[Unit]
+Description=UK Solar CRM Cloudflare quick tunnel
+After=network-online.target uk-solar-crm.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/bash /opt/uk-solar-lead-engine/ops/scripts/run-cloudflared.sh
+Restart=always
+RestartSec=8
+TimeoutStopSec=15
+
+[Install]
+WantedBy=multi-user.target
